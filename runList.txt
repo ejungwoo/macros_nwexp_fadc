@@ -1,0 +1,6 @@
+/mnt/WD/MonData/RUN_235_event.root
+/mnt/WD/MonData/RUN_236_event.root
+/mnt/WD/MonData/RUN_237_event.root
+/mnt/WD/MonData/RUN_238_event.root
+/mnt/WD/MonData/RUN_239_event.root
+/mnt/WD/MonData/RUN_243_event.root
