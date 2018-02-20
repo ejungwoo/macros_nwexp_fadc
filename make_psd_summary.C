@@ -1,13 +1,15 @@
-#include "style.h"
-using namespace style;
+#include "TFile.h"
+#include "TChain.h"
+#include "TTree.h"
+#include <fstream>
+#include <iostream>
+using namespace std;
 
-void psd_raw()
+//#include "style.h"
+//using namespace style;
+
+void make_psd_summary()
 {
-  zcolor(1); // rainbow
-  auto xn = 500;
-  auto x1 = 0.;
-  auto x2 = 10000.;
-
   auto chain = new TChain("EventTree");
   TString fileName;
   ifstream file("runList.txt");
@@ -15,17 +17,74 @@ void psd_raw()
     cout << "Adding file: " << fileName << endl;
     chain -> Add(fileName);
   }
-  cout << chain -> GetEntries() << endl;
 
+  Int_t NA, NB;
+  Int_t Aid[28];
+  Int_t Bid[28];
+  Double_t AGeoSum[28];
+  Double_t BGeoSum[28];
+  Double_t AGeoPart[28];
+  Double_t BGeoPart[28];
+
+  chain -> SetBranchAddress("NA", &NA);
+  chain -> SetBranchAddress("NB", &NB);
+  chain -> SetBranchAddress("AID", &Aid);
+  chain -> SetBranchAddress("BID", &Bid);
+  chain -> SetBranchAddress("AGeoMeanSum", &AGeoSum);
+  chain -> SetBranchAddress("BGeoMeanSum", &BGeoSum);
+  chain -> SetBranchAddress("AGeoMeanPart",&AGeoPart);
+  chain -> SetBranchAddress("BGeoMeanPart",&BGeoPart);
+
+  auto outfile = new TFile("/mnt/WD/MonData/summary_psd.root","recreate");
+  auto outtree = new TTree("psd","");
+
+  bool AorB;
+  Int_t channelID;
+  Double_t geoSum, geoPart;
+
+  outtree -> Branch("isA", &AorB);
+  outtree -> Branch("channelID", &channelID);
+  outtree -> Branch("total", &geoSum);
+  outtree -> Branch("part",  &geoPart);
+
+  auto numEvents = chain -> GetEntries();
+  for (Long64_t eventID = 0; eventID < numEvents; ++eventID) {
+    chain -> GetEntry(eventID);
+    if (eventID % 200000 == 0)
+      cout << eventID << endl;
+
+    for (auto i = 0; i < NA; ++i) {
+      AorB = true;
+      channelID = Aid[i];
+      geoSum = AGeoSum[i];
+      geoPart = AGeoPart[i];
+      outtree -> Fill();
+    }
+
+    for (auto i = 0; i < NB; ++i) {
+      AorB = false;
+      channelID = Bid[i];
+      geoSum = BGeoSum[i];
+      geoPart = BGeoPart[i];
+      outtree -> Fill();
+    }
+  }
+
+  outfile -> cd();
+  outtree -> Write();
+  outfile -> Close();
+
+  /*
   auto h2 = new TH2D("Asumpart","PSA Wall-A;Total (ADC);Part (ADC)",xn,x1,x2,xn,x1,x2); free(make(h2));
        h2 = new TH2D("Bsumpart","PSA Wall-B;Total (ADC);Part (ADC)",xn,x1,x2,xn,x1,x2); free(make(h2));
-  auto h1 = new TH1D("Asumovpart","Part/Sum Wall-A;ADC Total/Part",200,0.5,2);           free(make(h1));
-       h1 = new TH1D("Bsumovpart","Part/Sum Wall-B;ADC Total/Part",200,0.5,2);           free(make(h1));
+  auto h1 = new TH1D("Asumovpart","Part/Sum Wall-A;ADC Total/Part",200,0.5,2);          free(make(h1));
+       h1 = new TH1D("Bsumovpart","Part/Sum Wall-B;ADC Total/Part",200,0.5,2);          free(make(h1));
 
   auto cvs = cc(); chain -> Draw("AGeoMeanPart:AGeoMeanSum>>Asumpart","","colz"); cvs -> SetLogz();
        cvs = cc(); chain -> Draw("BGeoMeanPart:BGeoMeanSum>>Bsumpart","","colz"); cvs -> SetLogz();
        cvs = cc(); chain -> Draw("BGeoMeanPart/BGeoMeanSum>>Asumovpart","",""); cvs -> SetLogz();
        cvs = cc(); chain -> Draw("BGeoMeanPart/BGeoMeanSum>>Asumovpart","",""); cvs -> SetLogz();
+       */
 }
 
 /*
